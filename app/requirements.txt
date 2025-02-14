@@ -1,0 +1,7 @@
+Flask
+flask_wtf
+python-dotenv
+gevent
+gunicorn
+vedo
+cadquery

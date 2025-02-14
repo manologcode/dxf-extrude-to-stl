@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generador de Extrusiones 3D</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.0.0/dist/tailwind.min.css" rel="stylesheet">
+</head>
+
+<body class="min-h-screen bg-gray-50">
+    <!-- Header -->
+    <header class="bg-white shadow-sm">
+        <div class="max-w-7xl mx-auto py-4 px-4">
+            <h1 class="text-2xl font-bold text-gray-900">Generador de Extrusiones 3D</h1>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto py-8 px-4">
+        <div class="grid md:grid-cols-2 gap-8">
+            <!-- Left Column - Form -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <form action="{{ url_for('upload_file') }}" method="POST" enctype="multipart/form-data" class="space-y-6">
+                    <p class="mt-4 text-sm text-gray-600">
+                        La extrusión es el proceso de crear un objeto 3D a partir de un perfil 2D,
+                        extendiéndolo a una altura específica. Los parámetros X e Y definen las dimensiones
+                        base del objeto.
+                    </p>
+                    <!-- File Upload -->
+                    <div class="space-y-2">
+                        <label class="block text-sm font-medium text-gray-700">
+                            Archivo DXF *
+                        </label>
+                        <div id="dropZone"
+                            class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-500 transition-colors">
+                            <input type="file" name="file" accept=".dxf" id="fileUpload" class="hidden" required>
+                            <div class="cursor-pointer">
+                                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                </svg>
+                                <p class="mt-2 text-sm text-gray-600" id="fileLabel">
+                                    Haga clic para subir o arrastre su archivo DXF
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Nombre y Altura en dos columnas -->
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="space-y-2">
+                            <label for="height" class="block text-sm font-medium text-gray-700">
+                                Altura de extrusión (mm) *
+                            </label>
+                            <input 
+                                type="number" 
+                                name="height"
+                                id="height" 
+                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-center" 
+                                required
+                                min="1"
+                                step="1"
+                                placeholder="Ej: 10.0"
+                            >
+                        </div>
+                    </div>
+                    <!-- Submit Button -->
+                    <button type="submit"
+                        class="w-full flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        <svg class="mr-2 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                        Generar Extrusión
+                    </button>
+                </form>
+            </div>
+
+            <!-- Right Column - Diagram -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-lg font-medium text-gray-900 mb-4">
+                    Esquema de Extrusión
+                </h2>
+                <div class="aspect-w-16 aspect-h-9 bg-gray-100 rounded-lg">
+                    <img src="{{ url_for('static', filename='schema.png') }}" alt="Esquema de extrusión" class="object-contain rounded-lg">
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // File upload handling
+        const dropZone = document.getElementById('dropZone');
+        const fileUpload = document.getElementById('fileUpload');
+        const fileLabel = document.getElementById('fileLabel');
+
+        // Prevent default drag behaviors
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+            document.body.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        // Highlight drop zone when item is dragged over it
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, highlight, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, unhighlight, false);
+        });
+
+        function highlight(e) {
+            dropZone.classList.add('border-blue-500');
+        }
+
+        function unhighlight(e) {
+            dropZone.classList.remove('border-blue-500');
+        }
+
+        // Handle dropped files
+        dropZone.addEventListener('drop', handleDrop, false);
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const file = dt.files[0];
+            handleFile(file);
+        }
+
+        // Handle selected files
+        fileUpload.addEventListener('change', function (e) {
+            handleFile(e.target.files[0]);
+        });
+
+        function handleFile(file) {
+            if (file && file.filename.endsWith('.dxf')) {
+                fileLabel.textContent = file.name;
+                
+                // Crear un nuevo objeto DataTransfer
+                const dataTransfer = new DataTransfer();
+                dataTransfer.items.add(file);
+                
+                // Actualizar el input file con el archivo
+                fileUpload.files = dataTransfer.files;
+            } else {
+                alert('Por favor, seleccione un archivo DXF válido');
+                fileLabel.textContent = 'Haga clic para subir o arrastre su archivo DXF';
+                fileUpload.value = '';
+            }
+        }
+
+        // Click handling for the drop zone
+        dropZone.addEventListener('click', () => {
+            fileUpload.click();
+        });
+    </script>
+</body>
+
+</html>
