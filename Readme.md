@@ -24,7 +24,7 @@ ejecución directa, ejecuta el comando de docker
 
 
 ```
-docker run -p 5000:5000 manologcode/dxf_extrude
+docker run -p 5000:5000 manologcode/freecadscripts
 
 ```
 Abre el navegador y esta corriendo en http://localhost:5000/

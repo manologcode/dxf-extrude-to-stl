@@ -19,7 +19,16 @@ RUN python -m venv /opt/venv \
 
 FROM python:3.11-slim
 
-RUN apt-get update && apt-get install -y libgl1-mesa-glx libxrender1 libsm6 libxext6
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libgl1 \
+    libglu1-mesa \
+    libglib2.0-0 \
+    libxrender1 \
+    libsm6 \
+    libxext6 \
+    libfontconfig1 \
+    libxrandr2 \
+    && rm -rf /var/lib/apt/lists/*
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
